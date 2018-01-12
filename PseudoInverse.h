@@ -9,11 +9,11 @@
 #define PSEUDOINVERSE_H_
 
 #include <Eigen/Dense>
-#include <Eigen/SVD>
+#include <Eigen/QR>
 
-using namespace Eigen;
+Eigen::MatrixXd pinv(Eigen::MatrixXd &mat);
 
-MatrixXd pinv(MatrixXd &mat);
+
 //MatrixXd pinv(MatrixXd &mat, double tolerance);
 
 #endif /* PSEUDOINVERSE_H_ */

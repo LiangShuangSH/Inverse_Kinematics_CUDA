@@ -8,6 +8,8 @@
 
 #include "PseudoInverse.h"
 
+using namespace Eigen;
+
 MatrixXd pinv(MatrixXd &mat) {
 	return mat.completeOrthogonalDecomposition().pseudoInverse();
 }

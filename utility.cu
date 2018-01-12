@@ -7,6 +7,8 @@
 
 #include "utility.cuh"
 
+using namespace Eigen;
+using namespace std;
 
 __device__ double normalize_angle(double angle) {
 	double new_angle = fmod(angle + PI, 2 * PI);
@@ -54,3 +56,10 @@ double* vectorToPointer(VectorXd v, int size) {
 	}
 	return p;
 }
+
+__host__ __device__ void copy_array(double* copy, double* origin, int size) {
+	for (int i = 0; i < size; i++) {
+		copy[i] = origin[i];
+	}
+}
+

@@ -14,13 +14,11 @@
 #include <Eigen/SVD>
 #include <iostream>
 
-using namespace Eigen;
-using namespace std;
-
 __device__ double normalize_angle(double angle);
 __host__ __device__ double euclidean_distance(double* a, double* b, int size);
-__device__ VectorXd normalize_vector(VectorXd v, int dim, double scale);
-VectorXd pointerToVector(double* p, int size);
-double* vectorToPointer(VectorXd v, int size);
+__device__ Eigen::VectorXd normalize_vector(Eigen::VectorXd v, int dim, double scale);
+Eigen::VectorXd pointerToVector(double* p, int size);
+double* vectorToPointer(Eigen::VectorXd v, int size);
+__host__ __device__ void copy_array(double* copy, double* origin, int size);
 
 #endif /* UTILITY_CUH_ */

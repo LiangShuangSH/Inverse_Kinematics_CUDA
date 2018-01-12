@@ -9,19 +9,17 @@
 #include "utility.cuh"
 #include "fresnel.cuh"
 
+using namespace std;
+using namespace Eigen;
 
-__host__ __device__ double* forward_kinematics(double* state, double a, double b, double t)
+__host__ __device__ void forward_kinematics(double* state, double a, double b, double t)
 {
-	double* new_state = new double[5];
-	for (int i = 0; i < 5; i++) {
-		new_state[i] = state[i];
-	}
 
 	double dx, dy, dz, dv, dw;
 
-	double s = new_state[3];
-	double c = new_state[4];
-	double d = new_state[2];
+	double s = state[3];
+	double c = state[4];
+	double d = state[2];
 
 	// The easy ones.
 	dz = 0.5*b*t*t + c*t;
@@ -80,34 +78,30 @@ __host__ __device__ double* forward_kinematics(double* state, double a, double b
 	}
 
 	// Apply the state change and transform into world coordinates.
-	new_state[0] += dx;
-	new_state[1] += dy;
-	new_state[2] += dz;
-	new_state[3] += dv;
-	new_state[4] += dw;
+	state[0] += dx;
+	state[1] += dy;
+	state[2] += dz;
+	state[3] += dv;
+	state[4] += dw;
 
 	//w = normalize_angle(w);
 
-	return new_state;
+	return;
 }
 
-__host__ __device__ double* forward_kinematics_3(double* state, double a1, double b1, double t1,
+__host__ __device__ void forward_kinematics_3(double* state, double a1, double b1, double t1,
 									 	 	 	 	double a2, double b2, double t2,
 									 	 	 	 	double a3, double b3, double t3) {
-	double* new_state = new double[5];
-	for (int i = 0; i < 5; i++) {
-		new_state[i] = state[i];
-	}
 
-	new_state = forward_kinematics(new_state, a1, b1, t1);
-	new_state = forward_kinematics(new_state, a2, b2, t2);
-	new_state = forward_kinematics(new_state, a3, b3, t3);
-	return new_state;
+	forward_kinematics(state, a1, b1, t1);
+	forward_kinematics(state, a2, b2, t2);
+	forward_kinematics(state, a3, b3, t3);
+	return;
 }
 
-__host__ __device__ double* forward_kinematics_3(double* state, double* u) {
-	double* new_state = forward_kinematics_3(state, u[0], u[1], u[2], u[3], u[4], u[5], u[6], u[7], u[8]);
-	return new_state;
+__host__ __device__ void forward_kinematics_3(double* state, double* u) {
+	forward_kinematics_3(state, u[0], u[1], u[2], u[3], u[4], u[5], u[6], u[7], u[8]);
+	return;
 }
 
 __host__ __device__ MatrixXd jacobian(double* state, double a, double b, double t)
@@ -632,6 +626,12 @@ __host__ double* inverse_kinematics_3(double* sq, double* uk, double* sk, double
 	VectorXd vec_uq = jcb_inv * (pointerToVector(sq, 5) - pointerToVector(sk, 5)) + pointerToVector(uk, 9);
 
 	uq = vectorToPointer(vec_uq, 9);
+
+	// Deal with negative time
+	if(uq[2] < 0.0) {uq[2] = 0;}
+	if(uq[5] < 0.0) {uq[5] = 0;}
+	if(uq[8] < 0.0) {uq[8] = 0;}
+
 	return uq;
 }
 

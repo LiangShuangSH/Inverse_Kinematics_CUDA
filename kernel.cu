@@ -24,6 +24,7 @@ using namespace Eigen;
 
 void Write_File(double* uk_data, double* sk_data, int data_num);
 void Read_File(double* uk_data, double* sk_data);
+__global__ void Experiment_Check_IK(double* sq, double* sk, double* uk, int data_num);
 
 __global__ void test_host_code(double* J) {
 	double state[5] = {0};
@@ -185,11 +186,13 @@ void cuda_find_inverse_kinematics() {
 
 	double* s0 = new double[5];
 	s0[0] = 0.0; s0[1] = 0.0; s0[2] = 0.0; s0[3] = 0.0; s0[4] = 0.0;
+	double* sq = new double[5];
+	sq[0] = s0[0]; sq[1] = s0[1]; sq[2] = s0[2]; sq[3] = s0[3]; sq[4] = s0[4];
 	double* u = new double[9];
 	u[0] = 0.4; u[1] = 0.4; u[2] = 0.4;
-	u[3] = 0.5; u[4] = 0.5; u[5] = 0.4;
+	u[3] = 0.5; u[4] = 0.5; u[5] = 0.5;
 	u[6] = 0.4; u[7] = 0.4; u[8] = 0.4;
-	double* sq = forward_kinematics_3(s0, u);
+	forward_kinematics_3(sq, u);
 
 	double* dev_sq;
 	cudaMalloc(&dev_sq, 5 * sizeof(double));
@@ -222,40 +225,78 @@ void cuda_find_inverse_kinematics() {
 
 	ofstream ik_file;
 	ik_file.open("./inverse_kinematics.data");
+	ik_file << "Sample interval: " << itv << endl;
 	ik_file << "Query: ";
 	for (int i = 0; i < 5; i++) {
 		ik_file << sq[i] << " ";
 	}
 	ik_file << "" << endl;
+	ik_file << "" << endl;
 
-	double threshold = 0.5;
 	double error;
 	double uk[9];
 	double sk[5];
-	double progress;
+	//int progress;
+	double error_min = 100.0;
+	double* uk_min = new double[9];
+	double* sk_min = new double[5];
+	double* uq_min = new double[9];
+
 	for (unsigned long int i = 0; i < data_num; i++) {
-		// In state space
-		// If the query point is close enough to the sample point
 		// Do inverse kinematics
-		if (dist_record[i] <= threshold) {
-			// Assign uk, sk
-			for (int j = 0; j < 9; j++) { uk[j] = uk_data[i*9 + j]; }
-			for (int j = 0; j < 9; j++) { sk[j] = sk_data[i*5 + j]; }
-			double* uq = inverse_kinematics_3(sq, uk, sk, s0);
-			double* sf = forward_kinematics_3(s0, uq);
-			error = euclidean_distance(sf, sq, 5);
-			// Write file
-			ik_file << "No." << i << ", " << "error: " <<error << endl;
-			ik_file << "uk: ";
-			for(int j = 0; j < 9; j++) { ik_file << uk[j] << " "; }
-			ik_file << "" << endl;
-			ik_file << "sk: ";
-			for(int j = 0; j < 5; j++) { ik_file << sk[j] << " "; }
-			ik_file << "" << endl;
+		// Assign uk, sk
+		for (int j = 0; j < 9; j++) { uk[j] = uk_data[i*9 + j]; }
+		for (int j = 0; j < 5; j++) { sk[j] = sk_data[i*5 + j]; }
+		double* uq = inverse_kinematics_3(sq, uk, sk, s0);
+		double* sf = new double[5];
+		sf[0] = s0[0]; sf[1] = s0[1]; sf[2] = s0[2]; sf[3] = s0[3]; sf[4] = s0[4];
+		forward_kinematics_3(sf, uq);
+		error = euclidean_distance(sf, sq, 2);
+
+		// Check Min
+		if (error < error_min) {
+			error_min = error;
+			for (int j = 0; j < 9; j++) { uk_min[j] = uk[j]; }
+			for (int j = 0; j < 5; j++) { sk_min[j] = sk[j]; }
+			for (int j = 0; j < 9; j++) { uq_min[j] = uq[j]; }
 		}
-		progress = i / data_num;
-		cout << int(progress*100.0) << "%\r";
+
+		// Write file
+		/*
+		ik_file << "No." << i << ", " << "error: " << error << endl;
+		ik_file << "uk: ";
+		for(int j = 0; j < 9; j++) { ik_file << uk[j] << " "; }
+		ik_file << "" << endl;
+		ik_file << "sk: ";
+		for(int j = 0; j < 5; j++) { ik_file << sk[j] << " "; }
+		ik_file << "" << endl;
+		ik_file << "uq: ";
+		for(int j = 0; j < 9; j++) { ik_file << uq[j] << " "; }
+		ik_file << "" << endl;
+		ik_file << "s diff: ";
+		for(int j = 0; j < 5; j++) { ik_file << sf[j] - sq[j] << " "; }
+		ik_file << "" << endl;
+		ik_file << "" << endl;
+		*/
+
+		//progress = int(double(i) / double(data_num) * 100.0);
+		//cout << "\rProgress: " << progress << "%" << flush;
 	}
+
+	// Write Min
+	ik_file << "The best result: " << endl;
+	ik_file << "error: " << error_min << endl;
+	ik_file << "uk: ";
+	for(int j = 0; j < 9; j++) { ik_file << uk_min[j] << " "; }
+	ik_file << "" << endl;
+	ik_file << "sk: ";
+	for(int j = 0; j < 5; j++) { ik_file << sk_min[j] << " "; }
+	ik_file << "" << endl;
+	ik_file << "uq: ";
+	for(int j = 0; j < 9; j++) { ik_file << uq_min[j] << " "; }
+	ik_file << "" << endl;
+	ik_file << "" << endl;
+
 	ik_file.close();
 }
 
@@ -274,7 +315,7 @@ void Write_File(double* uk_data, double* sk_data, int data_num) {
 	ofstream sk_file;
 	sk_file.open("./sk.data");
 
-	for (int i = 0; i < data_num; i++) {
+	for (unsigned long int i = 0; i < data_num; i++) {
 		for (int j = 0; j < 9; j++) {
 			uk_file << uk_data[i*9 + j] << " ";
 		}
@@ -293,11 +334,9 @@ void Write_File(double* uk_data, double* sk_data, int data_num) {
 void Read_File(double* uk_data, double* sk_data) {
 	ifstream uk_file;
 	uk_file.open("./uk.data");
-	ifstream sk_file;
-	sk_file.open("./sk.data");
 
 	// Read uk
-	int idx = 0;
+	unsigned long int idx = 0;
 	double a1, b1, t1, a2, b2, t2, a3, b3, t3;
 	while (uk_file >> a1 >> b1 >> t1 >> a2 >> b2 >> t2 >> a3 >> b3 >> t3) {
 		uk_data[idx++] = a1;
@@ -311,6 +350,10 @@ void Read_File(double* uk_data, double* sk_data) {
 		uk_data[idx++] = t3;
 	}
 
+	uk_file.close();
+
+	ifstream sk_file;
+	sk_file.open("./sk.data");
 	// Read sk
 	idx = 0;
 	double x, y, z, v, w;
@@ -322,6 +365,24 @@ void Read_File(double* uk_data, double* sk_data) {
 		sk_data[idx++] = w;
 	}
 
-	uk_file.close();
 	sk_file.close();
+}
+
+// The kernel deals one query at a time in limited search space
+__global__ void Experiment_Check_IK(double* sq, double* sk, double* uk, int data_num, double* record) {
+	// TID
+	int tid = thread.x;
+
+	// Create a random control
+	double* u = new double[9];
+	for (int i = 0; i < 3; i++) {
+		u[i*3 + 0] = A_MIN + (double)rand()/RAND_MAX * (A_MAX - A_MIN);
+		u[i*3 + 1] = B_MIN + (double)rand()/RAND_MAX * (B_MAX - B_MIN);
+		u[i*3 + 2] = T_MIN + (double)rand()/RAND_MAX * (T_MAX - T_MIN);
+	}
+	// Get sq by random control
+	for (int i = 0; i < 5; i++) {sq[i] = 0;}
+	forward_kinematics_3(sq, u);
+
+	//
 }
