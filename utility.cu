@@ -41,7 +41,7 @@ __device__ VectorXd normalize_vector(VectorXd v, int dim, double scale) {
 }
 
 
-VectorXd pointerToVector(double* p, int size) {
+__host__ __device__ VectorXd pointerToVector(double* p, int size) {
 	VectorXd v(size);
 	for (int i = 0; i < size; i++) {
 		v(i) = p[i];
@@ -49,12 +49,36 @@ VectorXd pointerToVector(double* p, int size) {
 	return v;
 }
 
-double* vectorToPointer(VectorXd v, int size) {
+__host__ __device__ void pointerToVector2(VectorXd& v, double* p, int size) {
+	for (int i = 0; i < size; i++) {
+		v(i) = p[i];
+	}
+	return;
+}
+
+__host__ __device__ double* vectorToPointer(VectorXd v, int size) {
 	double* p = new double[size];
 	for (int i = 0; i < size; i++) {
 		p[i] = v(i);
 	}
 	return p;
+}
+
+__host__ __device__ void vectorToArray(double a[], VectorXd v, int size) {
+	for (int i = 0; i < size; i++) {
+		a[i] = v(i);
+	}
+	return;
+}
+
+__host__ __device__ void pointerToMatrix(MatrixXd& m, double* p, int rows, int cols) {
+	int idx = 0;
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < cols; j++) {
+			m(i, j) = p[idx++];
+		}
+	}
+	return;
 }
 
 __host__ __device__ void copy_array(double* copy, double* origin, int size) {
