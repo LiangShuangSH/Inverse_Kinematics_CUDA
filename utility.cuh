@@ -17,8 +17,9 @@
 __device__ double normalize_angle(double angle);
 __host__ __device__ double euclidean_distance(double* a, double* b, int size);
 __device__ Eigen::VectorXd normalize_vector(Eigen::VectorXd v, int dim, double scale);
-Eigen::VectorXd pointerToVector(double* p, int size);
+__host__ __device__ Eigen::VectorXd pointerToVector(double* p, int size);
 double* vectorToPointer(Eigen::VectorXd v, int size);
 __host__ __device__ void copy_array(double* copy, double* origin, int size);
+__host__ double fRand(double fMin, double fMax);
 
 #endif /* UTILITY_CUH_ */

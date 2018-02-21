@@ -41,7 +41,7 @@ __device__ VectorXd normalize_vector(VectorXd v, int dim, double scale) {
 }
 
 
-VectorXd pointerToVector(double* p, int size) {
+__host__ __device__ VectorXd pointerToVector(double* p, int size) {
 	VectorXd v(size);
 	for (int i = 0; i < size; i++) {
 		v(i) = p[i];
@@ -61,5 +61,10 @@ __host__ __device__ void copy_array(double* copy, double* origin, int size) {
 	for (int i = 0; i < size; i++) {
 		copy[i] = origin[i];
 	}
+}
+
+__host__ double fRand(double fMin, double fMax) {
+	double f = (double)rand() / RAND_MAX;
+	return fMin + f * (fMax - fMin);
 }
 
