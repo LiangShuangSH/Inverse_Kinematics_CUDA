@@ -808,7 +808,7 @@ __global__ void linear_approximation(double* u, double* sq, double* inv_jcb_data
 		forward_kinematics(&s[0], uq_vec(i*3 + 0), uq_vec(i*3 + 1), uq_vec(i*3 + 2));
 	}
 
-	bool nice = true; //angle_check(uq_vec(1), uq_vec(4), uq_vec(7), uq_vec(2), uq_vec(5), uq_vec(8));
+	bool nice = angle_check(uq_vec(1), uq_vec(4), uq_vec(7), uq_vec(2), uq_vec(5), uq_vec(8));
 
 	if (nice) {
 		// Record
