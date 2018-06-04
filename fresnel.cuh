@@ -200,7 +200,7 @@ __host__ __device__ void frenel(double x, double *s, double *c)
 			h = Cmul(h, del);
 			if (fabs(del.r - 1.0) + fabs(del.i) < EPS) break;
 		}
-		if (k > MAXIT) printf("cf failed in frenel %f\n", x);
+		//if (k > MAXIT) printf("cf failed in frenel %f\n", x);
 		h = Cmul(Complex(ax, -ax), h);
 		cs = Cmul(Complex(0.5, 0.5),
 			Csub(ONE, Cmul(Complex(cos(0.5*pix2), sin(0.5*pix2)), h)));
